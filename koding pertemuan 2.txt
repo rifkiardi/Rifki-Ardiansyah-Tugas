@@ -1,0 +1,259 @@
+1. configurasi awal
+
+$autoload['libraries'] = array('database','session');
+$autoload['helper'] = array('url','form');
+$autoload['model'] = array('MApp');
+
+$config['base_url'] = 'http://localhost/laundry/';
+
+$route['default_controller'] = 'CApp';
+
+Setting database di file database.php
+---------------------------------------------------------
+2. Membuat Model (MApp)
+3. Membuat Controller (CApp)
+4. Membuat Tampilan Login (VLogin)
+
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+?><!DOCTYPE html>
+<html>
+<head>
+  <title> Login </title>
+  <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/css/bootstrap.css') ?>">
+  <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/css/bootstrap.min.css') ?>">
+
+</head>
+<body>
+
+<div class="container mt-4">
+<?php if (!empty($this->session->flashdata('error_login'))) :?>
+    <div class="alert alert-warning">
+        <p> Mohon maaf password atau username salah </p>
+    </div>
+<?php endif ?>
+
+
+    <?= form_open('CApp/CProsesLogin', ['method' => 'POST']) ?>
+            <div class="form-group">
+                <label>Nama Pengguna</label>
+                <input type="text" class="form-control" name="nm_pengguna" placeholder="Nama Pelanggan">
+            </div>
+            <div class="form-group">
+                <label>Password</labl>
+                <input type="password" class="form-control" name="pass" placeholder="Password">
+            </div>
+            <input type="submit" class="btn btn-success" value="Login">
+    <?= form_close()?>
+</div>
+<script type="text/javascript" src="<?php echo base_url('assets/js/bootstrap.js') ?>"></script>
+<script type="text/javascript" src="<?php echo base_url('assets/js/bootstrap.min.js') ?>"></script>
+</body>
+</html>
+
+----------------------------------------------------------------------------------------
+5. Membuat function index
+	public function Index()
+	{
+		$this->load->view('VLogin');
+	}
+----------------------------------------------------------------------------------------
+6. Membuat function CProsesLogin
+
+public function CProsesLogin(){
+		$pengguna = $this->input->post('nm_pengguna');
+		$pass = $this->input->post('pass');
+		$role = 'kasir';
+		$hasil = $this->MApp->MProsesLogin($pengguna, $pass, $role);
+		if ($hasil == false) {
+			$this->session->set_flashdata('error_login', true);
+			redirect('CApp');
+		}
+		$hasil2 = array(
+			'username' => $hasil['username'],
+			'nm_user' => $hasil['nm_user'],
+			'id_user' => $hasil['id_user'],
+			'id_outlet' => $hasil['id_outlet']
+			);
+		$this->session->set_userdata($hasil2);
+		//$this->session->set_userdata('id_outlet', $hasil2['id_outlet']);
+
+		$this->session->set_flashdata('status', 'Selamat Datang : ' .$hasil2['username']);
+		redirect('CApp/CTampilMember');
+	}
+
+---------------------------------------------------------------------------------------
+7. Membuat function MProsesLogin
+
+public function MProsesLogin($pengguna, $pass, $role)
+	{
+		$sql = $this->db->get_where('tb_user',[
+			'username' => $pengguna,
+			'password' => $pass,
+			'role' => $role
+			]);
+		if($sql->num_rows() < 1){
+			return false;
+		}else {
+			return $sql->row_array();
+		}
+	}
+
+----------------------------------------------------------------------------------------
+8. Membuat function CTampilMember
+
+public function CTampilMember()
+	{
+		$id_user = $this->session->userdata('id_user');
+		$data = $this->MApp->MTampilMember($id_user);
+		$this->load->view('VHome', ['data' => $data]);
+	}
+
+-----------------------------------------------------------------------------------------
+9. Membuat function MTampilMember
+
+public function MTampilMember($id_user)
+	{
+		$this->db->where('id_user', $id_user);
+		return $this->db->get('tb_member')->result_array();
+	}
+
+-----------------------------------------------------------------------------------------
+10. Membuat view home (VHome)
+
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+?><!DOCTYPE html>
+<html>
+<head>
+    <title> Beranda </title>
+    <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/css/bootstrap.css') ?>">
+    <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/css/bootstrap.min.css') ?>">
+    <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/datatables/jquery.dataTables.min.css') ?>">
+    <script type="text/javascript" src="<?php echo base_url('assets/datatables/jquery-3.5.1.js') ?>"></script>
+    <script type="text/javascript" src="<?php echo base_url('assets/datatables/jquery.dataTables.min.js') ?>"></script>
+
+    
+</head>
+<body>
+
+<?php if ($this->session->has_userdata('username')): ?>
+	<div class="row">
+		<div class="col-md-12">
+			<?php $this->load->view('VNavbar') ?>
+		</div>
+	</div>
+	
+	<?php if (!empty($this->session->flashdata('status'))): ?>
+		<div class="alert alert-warning">
+			<?= $this->session->flashdata('status') ?>
+		</div>
+	<?php endif ?>
+	
+	<div class="container">
+		<div class="row mt-3">
+			<div class="col-md-12">
+				<table id="tabelmember" class="display" style="width:100%">
+				<thead align="center">
+					<tr>
+						<th>No</th>
+						<th>Nama Member</th>
+						<th>No Telp</th>
+						<th>Alamat</th>
+						<th>Aksi</th>
+					</tr>
+				</thead>
+				<tbody>
+				<?php 
+				$i=1;
+				foreach ($data as $d) :?>
+					<tr>
+						<td><?= $i++ ?></td>
+						<td><?= $d['nm_member'] ?></td>
+						<td><?= $d['tlp_member'] ?></td>
+						<td><?= $d['alamat_member'] ?></td>
+						<td align="center">
+							<a href="<?php echo site_url('App_controler/CEditMember/'.$d['id_member']) ?>" class="btn btn-outline-success">Edit </a>
+							<a href="<?php echo site_url('App_controler/CHapusMember/' . $d['id_member']) ?>" class="btn btn-outline-success" onclick="return confirm('Yakin ingin menghapus')"> Hapus</a>
+						</td>
+					</tr>
+				<?php endforeach ?>
+				</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+
+	  <script>   
+	        $(document).ready(function() {
+	            $('#tabelmember').DataTable();
+	        } );
+ 	   </script> 
+
+
+	<div class="row">
+		<div class="container col-md-9">
+			<a href="<?php echo site_url('App_controler/CTambahMember') ?>" class="btn btn-success"> Tambah Member</a>
+		</div>
+	</div>
+<?php else: ?>
+	<?php $this->load->view('Vlogin') ?>
+<?php endif ?>
+<script type="text/javascript" src="<?php echo base_url('assets/js/bootstrap.js') ?>"></script>
+<script type="text/javascript" src="<?php echo base_url('assets/js/bootstrap.min.js') ?>"></script>
+</body>
+</html>
+
+------------------------------------------------------------------------------------------
+11. Membuat view navbar (VNav)
+
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+?><!DOCTYPE html>
+<html>
+<head>
+  <title> </title>
+  <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/css/bootstrap.css') ?>">
+  <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/css/bootstrap.min.css') ?>">
+
+
+</head>
+<body>
+
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">RPL Laundry</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="">Member <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="">Service</a>
+      </li>
+       <li class="nav-item">
+        <a class="nav-link" href="">Keranjang</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="">Pembayaran</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="">Laporan</a>
+      </li>
+
+    </ul>
+    <form class="form-inline my-2 my-lg-0">
+      <a class="btn btn-outline-success ml-1" href="<?= site_url('App_controler/Clogout')?>">Logout</a>
+    </form>
+  </div>
+</nav>
+
+<script type="text/javascript" src="<?php echo base_url('assets/js/bootstrap.js') ?>"></script>
+<script type="text/javascript" src="<?php echo base_url('assets/js/bootstrap.min.js') ?>"></script>
+</body>
+</html>

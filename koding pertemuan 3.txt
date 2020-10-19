@@ -1,0 +1,184 @@
+------- koting tombol tambah member -> menampilkan form tambah member (di controller)---------
+public function CTambahMember()
+	{
+		$this->load->view('VTambahMember');
+	}
+
+-------- membuat form tambah member (di view) -----------
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+?><!DOCTYPE html>
+<html>
+<head>
+	<title> Tambah  Member</title>
+    <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/css/bootstrap.css') ?>">
+	<link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/css/bootstrap.min.css') ?>">
+
+    <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/datatable/datatablecss.css') ?>">
+    <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/datatable/datatablecss.min.css') ?>">
+</head>
+<body>
+<div>
+<?php if ($this->session->has_userdata('username')): ?>
+	<div class="row">
+		<div class="col-md-12">
+			<?php $this->load->view('VHeader') ?>
+		</div>
+	</div>
+
+	<div class="row mt-5">
+	<div class="container">
+		<?= form_open('App_controler/CProsesTambahMember', ['method' => 'POST']) ?>
+            <div class="form-group">
+                <label>Nama Member</label>
+                <input type="text" class="form-control" name="nm_member" required>
+            </div>
+            <div class="form-group">
+                <label>Telp/No Hp</label>
+                <input type="number" class="form-control" name="tlp_member" required>
+            </div>
+            <div class="form-group">
+                <label>Alamat Member</label>
+                <input type="text" class="form-control" name="alamat_member" required>
+            </div>
+            <input type="submit" class="btn btn-success" value="Daftar">
+    	<?= form_close()?>
+    </div>
+	</div>
+</div>
+<?php else: ?>
+    <?php $this->load->view('Vlogin') ?>
+<?php endif ?>
+<script type="text/javascript" src="<?php echo base_url('assets/js/bootstrap.js') ?>"></script>
+<script type="text/javascript" src="<?php echo base_url('assets/js/bootstrap.min.js') ?>"></script>
+</body>
+</html>
+
+------------------ koding tombol tambah member (controller) ----------------------
+public function CProsesTambahMember()
+	{
+		$id_user = $this->session->userdata('id_user');
+		$nm_member = $this->input->post('nm_member');
+		$tlp_member = $this->input->post('tlp_member');
+		$alamat_member = $this->input->post('alamat_member');
+
+		$hasil = $this->App_model->MProsesTambahMember($nm_member, $tlp_member, $alamat_member, $id_user);
+		if ($hasil == true) {
+			$this->session->set_flashdata('status', 'Berhasil Menambahkan Member ');
+
+		}else {
+			$this->session->set_flashdata('status', 'Gagal Menambahkan Member');
+		}
+		redirect('App_controler/CTampilMember');
+	}
+------------------ koding tombol tambah member (model)----------------------
+public function MProsesTambahMember($nm_member, $tlp_member, $alamat_member, $id_user)
+	{
+		return $this->db->insert('tb_member', [
+			'nm_member' => $nm_member,
+			'tlp_member' => $tlp_member,
+			'alamat_member' => $alamat_member,
+			'id_user' => $id_user
+			]) > 0;
+	}
+------------------ koding tombol hapus member (controller)--------------------------
+public function CHapusMember($id)
+	{
+		$this->App_model->MHapusMember($id);
+		redirect('App_controler/CTampilMember');
+	}
+------------------ koding tombol hapus member (model)--------------------------
+public function MHapusMember($id)
+	{
+		$this->db->where('id_member', $id);
+		return $hasil = $this->db->delete('tb_member');
+	}
+
+------------------ koding tombol edit member -> menampilkan form edit member (controller)--------------------------
+public function CEditMember($id)
+	{
+		$data = $this->App_model->MEditMember($id);
+		$this->load->view('VEditMember', ['data' => $data]);
+	}
+------------------ koding edit member -> menampilkan form edit member (model)--------------------------
+public function MEditMember($id)
+	{
+		$this->db->where('id_member', $id);
+		return $hasil = $this->db->get('tb_member')->row_array();
+	}
+-------- membuat form edit member (di view) -----------
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+?><!DOCTYPE html>
+<html>
+<head>
+	<title> Beranda </title>
+    <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/css/bootstrap.css') ?>">
+	<link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/css/bootstrap.min.css') ?>">
+
+    <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/datatable/datatablecss.css') ?>">
+    <link rel="stylesheet" type="text/css" href="<?php echo base_url('assets/datatable/datatablecss.min.css') ?>">
+</head>
+<body>
+
+<?php if ($this->session->has_userdata('username')): ?>
+	<div class="row">
+		<div class="col-md-12">
+			<?php $this->load->view('VHeader') ?>
+		</div>
+	</div>
+	<div class="row mt-5">
+	<div class="container">
+		<?= form_open('App_controler/CProsesEditMember/'.$data['id_member'], ['method' => 'POST']) ?>
+            <div class="form-group">
+                <label>Nama Member</label>
+                <input type="text" class="form-control" name="nm_member" required value="<?= $data['nm_member']?>">
+            </div>
+            <div class="form-group">
+                <label>Telp/No Hp</label>
+                <input type="number" class="form-control" name="tlp_member" required value="<?= $data['tlp_member'] ?>">
+            </div>
+            <div class="form-group">
+                <label>Alamat Member</label>
+                <input type="text" class="form-control" name="alamat_member" required value="<?= $data['alamat_member'] ?>">
+            </div>
+            <input type="submit" class="btn btn-success" value="Rubah">
+    	<?= form_close()?>
+    </div>
+	</div>
+	
+<?php else: ?>
+	<?php $this->load->view('Vlogin') ?>
+<?php endif ?>
+<script type="text/javascript" src="<?php echo base_url('assets/js/bootstrap.js') ?>"></script>
+<script type="text/javascript" src="<?php echo base_url('assets/js/bootstrap.min.js') ?>"></script>
+</body>
+</html>
+----------------- koding tombol rubah -> untuk proses edit member (Model) ----------------
+public function MProsesEditMember($nm_member, $tlp_member, $alamat_member, $id)
+	{
+		$this->db->where('id_member', $id);
+		return $hasil = $this->db->update('tb_member',[
+			'id_member' => $id,
+			'nm_member' => $nm_member,
+			'tlp_member' => $tlp_member,
+			'alamat_member' => $alamat_member
+		]) > 0;
+	}
+----------------- koding tombol rubah -> untuk proses edit member (controller) ----------------
+public function CProsesEditMember($id_member)
+	{
+		$id = $id_member;
+		$nm_member = $this->input->post('nm_member');
+		$tlp_member = $this->input->post('tlp_member');
+		$alamat_member = $this->input->post('alamat_member');
+
+		$hasil = $this->MApp->MProsesEditMember($nm_member, $tlp_member, $alamat_member, $id);
+		if ($hasil == true) {
+			$this->session->set_flashdata('status', 'Berhasil Merubah Member ');
+
+		}else {
+			$this->session->set_flashdata('status', 'Gagal Merubah Member');
+		}
+		redirect('CApp/CTampilMember');
+	}
